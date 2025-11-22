@@ -1,0 +1,1615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Premium Economy — Discord-style</title>
+<style>
+  :root{
+    --bg:#07070a;
+    --panel:#0e1116; --glass:rgba(255,255,255,0.03);
+    --text:#e9f0fb; --muted:#97a3b3;
+    --accent1:#3ee7b0; --accent2:#3ec6ff;
+    --glow: 0 8px 30px rgba(62,231,176,0.08), 0 2px 6px rgba(62,198,255,0.04);
+    --radius:14px; --maxw:1100px;
+  }
+  .theme-A{--accent1:#7c5cff;--accent2:#5865f2;--glow:0 10px 30px rgba(120,92,255,0.08);}
+  .theme-B{--accent1:#00b7ff;--accent2:#0066ff;--glow:0 10px 30px rgba(0,183,255,0.08);}
+  .theme-C{--accent1:#4be1c4;--accent2:#2ebaaa;--glow:0 10px 30px rgba(75,225,196,0.06);}
+
+  *{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Arial,system-ui;color:var(--text)}
+  html,body{height:100%;margin:0;background:radial-gradient(1200px 400px at 10% 10%, rgba(62,198,255,0.06), transparent), var(--bg);-webkit-font-smoothing:antialiased}
+
+  .viewport{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .container{width:100%;max-width:var(--maxw);display:grid;grid-template-columns:280px 1fr;gap:18px}
+  @media (max-width:960px){.container{grid-template-columns:1fr;padding:8px}}
+
+  .sidebar{background:linear-gradient(180deg,var(--panel),rgba(255,255,255,0.01));border-radius:var(--radius);padding:16px;box-shadow:var(--glow);border:1px solid rgba(255,255,255,0.03)}
+  .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#04121a;margin-bottom:12px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .nav{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  .nav button{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;border:0;background:transparent;color:var(--text);cursor:pointer;text-align:left;width:100%}
+  .nav button.active{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 6px 18px rgba(0,0,0,0.4) inset;}
+  .nav button:hover{background:rgba(255,255,255,0.02)}
+
+  .main{display:flex;flex-direction:column;gap:12px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+  .balances{display:flex;gap:12px;align-items:center}
+  .bal{background:var(--glass);padding:10px 14px;border-radius:10px;min-width:140px}
+
+  .panel{background:linear-gradient(180deg,var(--panel), rgba(255,255,255,0.01));padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.02);box-shadow:var(--glow)}
+  .controls{display:flex;flex-wrap:wrap;gap:8px}
+  .btn{padding:10px 14px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:var(--text);cursor:pointer;transition:all 0.2s}
+  .btn:hover{background:rgba(255,255,255,0.04);transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#04121a;font-weight:600;box-shadow:0 6px 22px rgba(0,0,0,0.45)}
+
+  .log{height:280px;overflow:auto;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);font-size:13px;margin:12px 0}
+  .log-entry{animation:slideIn 0.3s ease-out}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+  
+  .command-row{display:flex;gap:8px;margin-top:10px;position:relative}
+  input,select{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);padding:10px;border-radius:8px;color:var(--text);flex:1;transition:border 0.2s}
+  input:focus{outline:none;border-color:var(--accent1)}
+  select{background:rgba(0,0,0,0.5)}
+  select option{background:var(--panel);color:var(--text)}
+
+  .autocomplete{position:absolute;bottom:100%;left:0;right:0;background:var(--panel);border:1px solid rgba(255,255,255,0.1);border-radius:8px;margin-bottom:4px;max-height:200px;overflow:auto;display:none;z-index:10}
+  .autocomplete-item{padding:8px 12px;cursor:pointer;font-size:13px}
+  .autocomplete-item:hover{background:rgba(255,255,255,0.05)}
+  .autocomplete-item.selected{background:rgba(255,255,255,0.08)}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,10,0.8);display:none;align-items:center;justify-content:center;padding:18px;z-index:60;backdrop-filter:blur(4px)}
+  .modal{background:linear-gradient(180deg,var(--panel), rgba(255,255,255,0.01));padding:20px;border-radius:12px;width:100%;max-width:520px;border:1px solid rgba(255,255,255,0.03);box-shadow:var(--glow);animation:modalIn 0.3s ease-out}
+  @keyframes modalIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+  .modal h3{margin:0 0 10px 0}
+  .row-between{display:flex;justify-content:space-between;align-items:center}
+
+  .profile-card{display:flex;align-items:center;gap:12px}
+  .avatar{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#04121a;font-size:24px}
+  .muted{color:var(--muted);font-size:13px}
+  .small{font-size:12px}
+
+  .toast{position:fixed;top:20px;right:20px;background:var(--panel);padding:16px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:var(--glow);z-index:100;animation:toastIn 0.3s ease-out;max-width:300px}
+  @keyframes toastIn{from{opacity:0;transform:translateX(100px)}to{opacity:1;transform:translateX(0)}}
+  .toast.success{border-left:3px solid var(--accent1)}
+  .toast.error{border-left:3px solid #ff6b6b}
+  .toast.info{border-left:3px solid var(--accent2)}
+
+  .cooldown-bar{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-top:4px}
+  .cooldown-progress{height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width 0.3s}
+
+  .stat-card{padding:14px;background:var(--glass);border-radius:10px;transition:all 0.2s}
+  .stat-card:hover{background:rgba(255,255,255,0.05);transform:translateY(-2px)}
+
+  .badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#04121a}
+
+  @media (max-width:520px){
+    .container{grid-template-columns:1fr}
+    .sidebar{order:2}
+    .main{order:1}
+    .topbar{flex-direction:column;align-items:flex-start;gap:8px}
+    .toast{right:10px;left:10px;max-width:none}
+  }
+</style>
+</head>
+<body class="theme-D">
+<div class="viewport">
+  <div class="container" id="appContainer">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">EC</div>
+        <div>
+          <div style="font-weight:700">Premium Economy</div>
+          <div class="muted">Discord-style • Local</div>
+        </div>
+      </div>
+
+      <div id="authCenter" style="margin-top:18px"></div>
+
+      <nav class="nav" id="mainNav" style="display:none">
+        <button data-view="home" class="active">🏠 Home</button>
+        <button data-view="profile">👤 Profile</button>
+        <button data-view="stats">📊 Stats</button>
+        <button data-view="achievements">🏆 Achievements</button>
+        <button data-view="globalchat">💬 Global Chat</button>
+        <button data-view="settings">⚙️ Settings</button>
+        <button data-view="account">🔐 Account</button>
+      </nav>
+
+      <div style="margin-top:auto;padding-top:20px" class="muted small">Data stored in browser only</div>
+    </aside>
+
+    <main class="main" id="mainApp" style="display:none"></main>
+  </div>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop"><div class="modal" id="modalInner"></div></div>
+<div id="toastContainer"></div>
+
+<script>
+const STORAGE_KEY = 'premium_ec_accounts_v2';
+const GLOBAL_CHAT_KEY = 'premium_ec_global_chat';
+const COOLDOWNS = { 
+  work:60*1000, beg:30*1000, rob:120*1000, daily:24*60*60*1000, search:45*1000,
+  crime:180*1000, fish:60*1000, mine:90*1000, hunt:120*1000, stream:300*1000,
+  hourly:60*60*1000, spin:24*60*60*1000
+};
+const EFFECT_DURATION = 60*1000;
+
+const authCenter = document.getElementById('authCenter');
+const mainNav = document.getElementById('mainNav');
+const mainApp = document.getElementById('mainApp');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalInner = document.getElementById('modalInner');
+const toastContainer = document.getElementById('toastContainer');
+
+let accounts = loadAccounts();
+let globalChat = loadGlobalChat();
+let current = null;
+let effectsTimer = null;
+let commandHistory = [];
+let historyIndex = -1;
+let autocompleteIndex = -1;
+
+const SHOP = [
+  { id:1, label:'Coffee', price:50, effect:{ type:'Coffee', mult:0.1, duration:EFFECT_DURATION }, category:'consumable' },
+  { id:2, label:'Energy Drink', price:150, effect:{ type:'Energy', cooldownReduce:0.5, duration:EFFECT_DURATION }, category:'consumable' },
+  { id:3, label:'Lucky Charm', price:500, effect:{ type:'Luck', successBoost:0.2, duration:EFFECT_DURATION }, category:'consumable' },
+  { id:4, label:'Fishing Rod', price:1000, unlock:'fish', category:'equipment' },
+  { id:5, label:'Pickaxe', price:1500, unlock:'mine', category:'equipment' },
+  { id:6, label:'Hunting Rifle', price:2000, unlock:'hunt', category:'equipment' }
+];
+
+const ACHIEVEMENTS = [
+  {id:'first_dollar',name:'First Dollar',desc:'Earn your first ₱100',check:u=>u.stats.totalEarned>=100,reward:50},
+  {id:'millionaire',name:'Millionaire',desc:'Reach ₱1,000,000',check:u=>(u.wallet+u.bank)>=1000000,reward:10000},
+  {id:'gambler',name:'High Roller',desc:'Gamble ₱10,000 total',check:u=>u.stats.totalGambled>=10000,reward:1000},
+  {id:'worker',name:'Hard Worker',desc:'Use work command 100 times',check:u=>u.stats.commandsUsed.work>=100,reward:500},
+  {id:'daily_streak',name:'Dedicated',desc:'Claim daily 7 days in a row',check:u=>u.dailyStreak>=7,reward:2000},
+  {id:'robber',name:'Master Thief',desc:'Successfully rob 50 times',check:u=>u.stats.successfulRobs>=50,reward:5000}
+];
+
+const JOBS = [
+  {id:'cashier',name:'Cashier',pay:200,requirement:0},
+  {id:'waiter',name:'Waiter',pay:350,requirement:1000},
+  {id:'mechanic',name:'Mechanic',pay:500,requirement:5000},
+  {id:'programmer',name:'Programmer',pay:800,requirement:20000},
+  {id:'doctor',name:'Doctor',pay:1500,requirement:100000}
+];
+
+const COMMANDS = [
+  'work','daily','beg','rob','search','crime','fish','mine','hunt','stream',
+  'deposit','withdraw','transfer','shop','inventory','buy','balance','gamble',
+  'coinflip','share','leaderboard','help','slots','blackjack','dice','rps',
+  'trivia','gift','trade','loan','duel','job','apply','invest','hourly','spin',
+  'achievements','quest'
+];
+
+function loadAccounts(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); }catch(e){ return {}; } }
+function saveAccounts(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts)); }
+function loadGlobalChat(){ try{ return JSON.parse(localStorage.getItem(GLOBAL_CHAT_KEY)||'[]'); }catch(e){ return []; } }
+function saveGlobalChat(){ localStorage.setItem(GLOBAL_CHAT_KEY, JSON.stringify(globalChat.slice(-100))); }
+async function sha256Hex(msg){ const enc = new TextEncoder(); const data = enc.encode(msg); const d = await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(d)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+
+function showToast(msg, type='info'){
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  toastContainer.appendChild(toast);
+  setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=>toast.remove(),300); },3000);
+}
+
+function renderAuth(){
+  authCenter.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="width:100%;padding:20px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border:1px solid rgba(255,255,255,0.03)">
+        <div style="font-size:20px;font-weight:700;margin-bottom:8px">Sign In</div>
+        <div class="muted" style="margin-bottom:16px">Enter username and password</div>
+        <label class="muted" style="display:block;margin-bottom:4px">Username</label>
+        <input id="authUser" placeholder="username" style="width:100%;margin-bottom:10px" />
+        <label class="muted" style="display:block;margin-bottom:4px">Password</label>
+        <input id="authPass" type="password" placeholder="password" style="width:100%;margin-bottom:14px" />
+        <div style="display:flex;gap:8px">
+          <button id="btnSignin" class="btn primary" style="flex:1">Sign In</button>
+          <button id="btnSignup" class="btn" style="flex:1">Sign Up</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('btnSignup').addEventListener('click', onSignUp);
+  document.getElementById('btnSignin').addEventListener('click', onSignIn);
+}
+
+async function onSignUp(){
+  const u = document.getElementById('authUser').value.trim();
+  const p = document.getElementById('authPass').value;
+  if(!u||!p){ showToast('Provide username and password','error'); return; }
+  if(accounts[u]){ showToast('Username already exists','error'); return; }
+  const h = await sha256Hex(p);
+  accounts[u] = { 
+    hash:h, 
+    data:{ 
+      wallet:500, bank:0, inventory:[], cooldowns:{}, effects:[], 
+      settings:{ theme:'D', soundEnabled:true },
+      stats:{ totalEarned:0, totalSpent:0, totalGambled:0, commandsUsed:{}, successfulRobs:0, timePlayed:0, loginTime:Date.now() },
+      achievements:[], dailyStreak:0, lastDaily:0, level:1, xp:0, job:null, businesses:[], quests:[]
+    } 
+  };
+  saveAccounts();
+  current = { username:u, hash:h, data:accounts[u].data };
+  afterLogin();
+  showToast('Account created successfully!','success');
+}
+
+async function onSignIn(){
+  const u = document.getElementById('authUser').value.trim();
+  const p = document.getElementById('authPass').value;
+  if(!u||!p){ showToast('Provide username and password','error'); return; }
+  const acc = accounts[u];
+  if(!acc){ showToast('Account not found','error'); return; }
+  const h = await sha256Hex(p);
+  if(h !== acc.hash){ showToast('Wrong password','error'); return; }
+  current = { username:u, hash:h, data:acc.data };
+  current.data.stats.loginTime = Date.now();
+  afterLogin();
+  showToast(`Welcome back, ${u}!`,'success');
+}
+
+function afterLogin(){
+  mainNav.style.display = '';
+  authCenter.style.display = 'none';
+  mainApp.style.display = '';
+  applyTheme(current.data.settings?.theme || 'D');
+  renderView('home');
+  startEffectsTimer();
+  checkAchievements();
+}
+
+function startEffectsTimer(){
+  if(effectsTimer) clearInterval(effectsTimer);
+  effectsTimer = setInterval(()=>{ 
+    updateEffectsUI();
+    if(current) current.data.stats.timePlayed = Math.floor((Date.now() - current.data.stats.loginTime)/1000);
+  }, 1000);
+}
+
+function renderView(view){
+  mainNav.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  const btn = mainNav.querySelector(`[data-view="${view}"]`);
+  if(btn) btn.classList.add('active');
+  
+  if(view==='home') renderHome();
+  else if(view==='profile') renderProfile();
+  else if(view==='stats') renderStats();
+  else if(view==='achievements') renderAchievements();
+  else if(view==='globalchat') renderGlobalChat();
+  else if(view==='settings') renderSettings();
+  else if(view==='account') renderAccount();
+}
+mainNav.addEventListener('click', (e)=>{ if(e.target.dataset.view) renderView(e.target.dataset.view); });
+
+function setupAutocomplete(inputEl){
+  const acDiv = document.createElement('div');
+  acDiv.className = 'autocomplete';
+  inputEl.parentElement.appendChild(acDiv);
+  
+  inputEl.addEventListener('input', ()=>{
+    const val = inputEl.value.toLowerCase();
+    if(!val){ acDiv.style.display='none'; return; }
+    const matches = COMMANDS.filter(c=>c.startsWith(val)).slice(0,5);
+    if(matches.length===0){ acDiv.style.display='none'; return; }
+    acDiv.innerHTML = matches.map((c,i)=>`<div class="autocomplete-item ${i===0?'selected':''}" data-cmd="${c}">${c}</div>`).join('');
+    acDiv.style.display='block';
+    autocompleteIndex = 0;
+    
+    acDiv.querySelectorAll('.autocomplete-item').forEach(item=>{
+      item.addEventListener('click',()=>{ inputEl.value=item.dataset.cmd; acDiv.style.display='none'; inputEl.focus(); });
+    });
+  });
+  
+  inputEl.addEventListener('keydown', (e)=>{
+    const items = acDiv.querySelectorAll('.autocomplete-item');
+    if(e.key==='ArrowDown' && items.length>0){
+      e.preventDefault();
+      autocompleteIndex = Math.min(autocompleteIndex+1, items.length-1);
+      items.forEach((it,i)=>it.classList.toggle('selected',i===autocompleteIndex));
+    }else if(e.key==='ArrowUp' && items.length>0){
+      e.preventDefault();
+      autocompleteIndex = Math.max(autocompleteIndex-1, 0);
+      items.forEach((it,i)=>it.classList.toggle('selected',i===autocompleteIndex));
+    }else if(e.key==='Tab' && items.length>0){
+      e.preventDefault();
+      inputEl.value = items[autocompleteIndex].dataset.cmd;
+      acDiv.style.display='none';
+    }else if(e.key==='Escape'){
+      acDiv.style.display='none';
+    }else if(e.key==='ArrowUp' && !inputEl.value){
+      e.preventDefault();
+      if(commandHistory.length>0){
+        historyIndex = historyIndex<0 ? commandHistory.length-1 : Math.max(0,historyIndex-1);
+        inputEl.value = commandHistory[historyIndex];
+      }
+    }else if(e.key==='ArrowDown' && historyIndex>=0){
+      e.preventDefault();
+      historyIndex++;
+      inputEl.value = historyIndex>=commandHistory.length ? '' : commandHistory[historyIndex];
+    }
+  });
+  
+  document.addEventListener('click',(e)=>{ if(!inputEl.contains(e.target) && !acDiv.contains(e.target)) acDiv.style.display='none'; });
+}
+
+function renderHome(){
+  if(!current) return;
+  mainApp.innerHTML = `
+    <div class="topbar">
+      <div>
+        <div style="font-weight:700">${escapeHtml(current.username)} ${current.data.level>1?`<span class="badge">Lvl ${current.data.level}</span>`:''}</div>
+        <div class="muted">${current.data.job?JOBS.find(j=>j.id===current.data.job)?.name:'No Job'} • ${formatTime(current.data.stats.timePlayed)}</div>
+      </div>
+      <div class="balances">
+        <div class="bal"><div class="muted">Wallet</div><div id="walletDisplay" style="font-weight:700">₱${(current.data.wallet||0).toLocaleString()}</div></div>
+        <div class="bal"><div class="muted">Bank</div><div id="bankDisplay" style="font-weight:700">₱${(current.data.bank||0).toLocaleString()}</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="margin-bottom:16px">
+        <strong>Chat Console</strong>
+        <div class="muted small">Type commands or press "/" to start typing • Type "help" for all commands</div>
+      </div>
+
+      <div id="log" class="log"></div>
+
+      <div class="command-row">
+        <input id="cmdInput" placeholder="Type a command (e.g., work, gamble 100) or press / to focus here" />
+        <button id="btnRun" class="btn primary">Run</button>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div style="margin-bottom:12px"><strong>Quick Stats</strong></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+        <div class="stat-card">
+          <div class="muted small">Net Worth</div>
+          <div id="networth" style="font-weight:700;font-size:20px">₱${((current.data.wallet||0)+(current.data.bank||0)).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Multiplier</div>
+          <div id="multiplier" style="font-weight:700;font-size:20px">x${(1 + ((current.data.effects||[]).reduce((s,e)=> s + (e.mult||0), 0))).toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Level / XP</div>
+          <div style="font-weight:700;font-size:20px">${current.data.level} (${current.data.xp}/${getXPForLevel(current.data.level+1)})</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Active Effects</div>
+          <div id="effectsList" style="font-weight:600">${getEffectsText()}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const cmdInput = document.getElementById('cmdInput');
+  document.getElementById('btnRun').addEventListener('click', ()=>{ 
+    const cmd = cmdInput.value;
+    if(cmd){ commandHistory.push(cmd); historyIndex=-1; }
+    runCmd(cmd); 
+    cmdInput.value=''; 
+  });
+  cmdInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ document.getElementById('btnRun').click(); } });
+  
+  setupAutocomplete(cmdInput);
+  
+  document.addEventListener('keydown', function slashShortcut(e){
+    if(e.key==='/' && document.activeElement !== cmdInput && !document.activeElement.matches('input,textarea')){
+      e.preventDefault();
+      cmdInput.focus();
+    }
+  });
+}
+
+function renderProfile(){
+  if(!current) return;
+  const totalItems = (current.data.inventory||[]).reduce((s,i)=>s+i.qty,0);
+  mainApp.innerHTML = `
+    <div class="panel">
+      <h3>Profile</h3>
+      <div class="muted" style="margin-bottom:20px">Your account overview</div>
+      
+      <div class="profile-card" style="margin-bottom:20px">
+        <div class="avatar">${escapeHtml(current.username.charAt(0).toUpperCase())}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:20px">${escapeHtml(current.username)} <span class="badge">Lvl ${current.data.level}</span></div>
+          <div class="muted">Net worth: ₱${((current.data.wallet||0)+(current.data.bank||0)).toLocaleString()} • ${current.data.achievements.length}/${ACHIEVEMENTS.length} Achievements</div>
+          <div style="margin-top:8px;background:rgba(255,255,255,0.05);height:8px;border-radius:4px;overflow:hidden">
+            <div style="width:${(current.data.xp/getXPForLevel(current.data.level+1)*100)}%;height:100%;background:linear-gradient(90deg,var(--accent1),var(--accent2))"></div>
+          </div>
+          <div class="muted small" style="margin-top:4px">${current.data.xp}/${getXPForLevel(current.data.level+1)} XP to next level</div>
+        </div>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+        <div class="stat-card">
+          <div class="muted small">Wallet Balance</div>
+          <div style="font-weight:700;font-size:24px">₱${(current.data.wallet||0).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Bank Balance</div>
+          <div style="font-weight:700;font-size:24px">₱${(current.data.bank||0).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Income Multiplier</div>
+          <div id="multiplier" style="font-weight:700;font-size:24px">x${(1 + ((current.data.effects||[]).reduce((s,e)=> s + (e.mult||0), 0))).toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Inventory Items</div>
+          <div style="font-weight:700;font-size:24px">${totalItems}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Current Job</div>
+          <div style="font-weight:700;font-size:18px">${current.data.job?JOBS.find(j=>j.id===current.data.job)?.name:'Unemployed'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Daily Streak</div>
+          <div style="font-weight:700;font-size:24px">${current.data.dailyStreak} days</div>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px;padding:14px;background:var(--glass);border-radius:10px">
+        <div style="font-weight:600;margin-bottom:6px">Active Effects</div>
+        <div id="effectsList" class="muted">${getEffectsText()}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStats(){
+  if(!current) return;
+  const s = current.data.stats;
+  mainApp.innerHTML = `
+    <div class="panel">
+      <h3>Statistics</h3>
+      <div class="muted" style="margin-bottom:20px">Your gameplay statistics</div>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px">
+        <div class="stat-card">
+          <div class="muted small">Time Played</div>
+          <div style="font-weight:700;font-size:20px">${formatTime(s.timePlayed)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Total Earned</div>
+          <div style="font-weight:700;font-size:20px">₱${(s.totalEarned||0).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Total Spent</div>
+          <div style="font-weight:700;font-size:20px">₱${(s.totalSpent||0).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Total Gambled</div>
+          <div style="font-weight:700;font-size:20px">₱${(s.totalGambled||0).toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Successful Robs</div>
+          <div style="font-weight:700;font-size:20px">${s.successfulRobs||0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="muted small">Current Level</div>
+          <div style="font-weight:700;font-size:20px">Level ${current.data.level}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <div style="font-weight:600;margin-bottom:12px">Commands Used</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+          ${Object.keys(s.commandsUsed||{}).map(cmd=>`
+            <div style="padding:10px;background:var(--glass);border-radius:8px">
+              <div class="muted small">${cmd}</div>
+              <div style="font-weight:600">${s.commandsUsed[cmd]} times</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAchievements(){
+  if(!current) return;
+  const unlocked = current.data.achievements || [];
+  mainApp.innerHTML = `
+    <div class="panel">
+      <h3>Achievements</h3>
+      <div class="muted" style="margin-bottom:20px">${unlocked.length}/${ACHIEVEMENTS.length} unlocked</div>
+      
+      <div style="display:grid;gap:12px">
+        ${ACHIEVEMENTS.map(ach=>{
+          const isUnlocked = unlocked.includes(ach.id);
+          return `
+            <div style="padding:16px;background:${isUnlocked?'linear-gradient(90deg,rgba(62,231,176,0.1),rgba(62,198,255,0.1))':'var(--glass)'};border-radius:10px;border:1px solid ${isUnlocked?'var(--accent1)':'rgba(255,255,255,0.05)'};display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-weight:700;color:${isUnlocked?'var(--accent1)':'var(--text)'}">
+                  ${isUnlocked?'✓ ':'🔒 '}${ach.name}
+                </div>
+                <div class="muted small">${ach.desc}</div>
+                <div class="muted small" style="margin-top:4px">Reward: ₱${ach.reward}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderGlobalChat(){
+  if(!current) return;
+  mainApp.innerHTML = `
+    <div class="panel">
+      <h3>Global Chat</h3>
+      <div class="muted" style="margin-bottom:16px">Chat with other players</div>
+      
+      <div id="globalChatLog" style="height:400px;overflow:auto;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);margin-bottom:12px">
+        ${globalChat.map(msg=>`
+          <div style="margin-bottom:8px;padding:8px;background:rgba(255,255,255,0.02);border-radius:6px">
+            <div style="font-weight:600;color:var(--accent1)">${escapeHtml(msg.user)}</div>
+            <div style="font-size:13px">${escapeHtml(msg.message)}</div>
+            <div class="muted small">${new Date(msg.time).toLocaleTimeString()}</div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div style="display:flex;gap:8px">
+        <input id="chatInput" placeholder="Type your message..." style="flex:1" />
+        <button id="sendChat" class="btn primary">Send</button>
+      </div>
+    </div>
+  `;
+  
+  const chatLog = document.getElementById('globalChatLog');
+  chatLog.scrollTop = chatLog.scrollHeight;
+  
+  document.getElementById('sendChat').addEventListener('click', sendGlobalMessage);
+  document.getElementById('chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendGlobalMessage(); });
+}
+
+function sendGlobalMessage(){
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  
+  globalChat.push({ user:current.username, message:msg, time:Date.now() });
+  saveGlobalChat();
+  input.value = '';
+  renderGlobalChat();
+  showToast('Message sent!','success');
+}
+
+function renderSettings(){
+  if(!current) return;
+  const theme = current.data.settings?.theme || 'D';
+  const sound = current.data.settings?.soundEnabled ?? true;
+  mainApp.innerHTML = `
+    <div class="panel">
+      <h3>Settings</h3>
+      <div class="muted" style="margin-bottom:20px">Customize your experience</div>
+      
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-weight:600;margin-bottom:8px">Theme</label>
+        <select id="themeSelect" style="width:100%;max-width:400px">
+          <option value="D">Gradient Premium (Mint → Cyan)</option>
+          <option value="A">Purple Glow</option>
+          <option value="B">Neon Cyber Blue</option>
+          <option value="C">Black & Mint</option>
+        </select>
+        <div class="muted small" style="margin-top:6px">Changes apply immediately</div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="soundToggle" ${sound?'checked':''} />
+          <span style="font-weight:600">Enable Sound Effects</span>
+        </label>
+        <div class="muted small" style="margin-top:6px">Play sounds for actions</div>
+      </div>
+      
+      <div style="display:flex;gap:8px">
+        <button id="saveSettings" class="btn primary">Save Changes</button>
+        <button id="exportData" class="btn">Export Data</button>
+        <button id="importData" class="btn">Import Data</button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('themeSelect').value = theme;
+  document.getElementById('themeSelect').addEventListener('change', (e)=>{ applyTheme(e.target.value); });
+  document.getElementById('saveSettings').addEventListener('click', ()=>{ 
+    const t=document.getElementById('themeSelect').value; 
+    const s=document.getElementById('soundToggle').checked;
+    current.data.settings = current.data.settings||{}; 
+    current.data.settings.theme = t;
+    current.data.settings.soundEnabled = s;
+    saveCurrent(); 
+    showToast('Settings saved','success');
+  });
+  
+  document.getElementById('exportData').addEventListener('click', ()=>{
+    const data = JSON.stringify(current.data);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${current.username}_backup.json`;
+    a.click();
+    showToast('Data exported!','success');
+  });
+  
+  document.getElementById('importData').addEventListener('click', ()=>{
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = (e)=>{
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        try{
+          const data = JSON.parse(ev.target.result);
+          current.data = data;
+          saveCurrent();
+          renderView('home');
+          showToast('Data imported successfully!','success');
+        }catch(err){
+          showToast('Invalid file format','error');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+}
+
+function renderAccount(){
+  if(!current) return;
+  mainApp.innerHTML = `
+    <div class="panel">
+      <h3>Account</h3>
+      <div class="muted" style="margin-bottom:20px">Manage your account</div>
+      
+      <div style="padding:14px;background:var(--glass);border-radius:10px;margin-bottom:14px">
+        <div class="muted small">USERNAME</div>
+        <div style="font-weight:700;font-size:18px;margin-top:4px">${escapeHtml(current.username)}</div>
+      </div>
+      
+      <div style="padding:14px;background:var(--glass);border-radius:10px;margin-bottom:20px">
+        <div class="muted small">PASSWORD</div>
+        <div id="pwdMask" style="font-weight:700;font-size:18px;margin-top:4px">••••••••</div>
+        <button id="showPwd" class="btn" style="margin-top:10px">Show Password</button>
+      </div>
+      
+      <div style="padding:16px;background:rgba(255,100,100,0.05);border:1px solid rgba(255,100,100,0.2);border-radius:10px">
+        <div style="font-weight:600;color:#ff6b6b;margin-bottom:4px">Danger Zone</div>
+        <div class="muted small" style="margin-bottom:10px">Logging out requires password to sign back in</div>
+        <button id="btnLogout" class="btn" style="background:rgba(255,100,100,0.1);color:#ff6b6b">Logout</button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('showPwd').addEventListener('click', async ()=>{
+    const pw = prompt('Enter your password to reveal');
+    if(!pw) return;
+    const h = await sha256Hex(pw);
+    if(h !== current.hash){ showToast('Wrong password','error'); return; }
+    document.getElementById('pwdMask').textContent = pw;
+    document.getElementById('showPwd').textContent = 'Hide';
+  });
+  
+  document.getElementById('btnLogout').addEventListener('click', ()=>{
+    if(effectsTimer) clearInterval(effectsTimer);
+    current = null;
+    renderAuth();
+    mainNav.style.display = 'none';
+    mainApp.style.display = 'none';
+    authCenter.style.display = '';
+    showToast('Logged out successfully','info');
+  });
+}
+
+function openModal(html){ modalInner.innerHTML = html; modalBackdrop.style.display = 'flex'; }
+function closeModal(){ modalBackdrop.style.display = 'none'; modalInner.innerHTML = ''; }
+modalBackdrop.addEventListener('click', (e)=>{ if(e.target===modalBackdrop) closeModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+function log(msg){ 
+  const logEl = document.getElementById('log');
+  if(!logEl) return;
+  const d=document.createElement('div'); 
+  d.className = 'log-entry';
+  d.textContent = `${new Date().toLocaleTimeString()} — ${msg}`; 
+  logEl.prepend(d); 
+}
+
+function saveCurrent(){ if(!current) return; accounts[current.username].data = current.data; saveAccounts(); }
+
+function updateEffectsUI(){
+  if(!current) return;
+  const now=Date.now();
+  const effects = (current.data.effects||[]).filter(e=>e.expires>now);
+  current.data.effects = effects;
+  const el = document.getElementById('effectsList');
+  if(el) el.textContent = getEffectsText();
+  const mul = document.getElementById('multiplier');
+  if(mul) mul.textContent = 'x' + (1 + effects.reduce((s,e)=> s + (e.mult||0), 0)).toFixed(2);
+  const net = document.getElementById('networth');
+  if(net) net.textContent = '₱' + ((current.data.wallet||0)+(current.data.bank||0)).toLocaleString();
+  const wal = document.getElementById('walletDisplay');
+  if(wal) wal.textContent = '₱' + (current.data.wallet||0).toLocaleString();
+  const ban = document.getElementById('bankDisplay');
+  if(ban) ban.textContent = '₱' + (current.data.bank||0).toLocaleString();
+  saveCurrent();
+}
+
+function getEffectsText(){
+  if(!current) return 'None';
+  const now=Date.now();
+  const effects = (current.data.effects||[]).filter(e=>e.expires>now);
+  if(effects.length===0) return 'None';
+  return effects.map(e=>`${e.type} (${Math.ceil((e.expires-now)/1000)}s)`).join(' • ');
+}
+
+function applyTheme(code){
+  document.body.classList.remove('theme-A','theme-B','theme-C');
+  if(code==='A') document.body.classList.add('theme-A');
+  if(code==='B') document.body.classList.add('theme-B');
+  if(code==='C') document.body.classList.add('theme-C');
+}
+
+function getXPForLevel(lvl){ return lvl * 100; }
+
+function addXP(amount){
+  if(!current) return;
+  current.data.xp += amount;
+  while(current.data.xp >= getXPForLevel(current.data.level+1)){
+    current.data.xp -= getXPForLevel(current.data.level+1);
+    current.data.level++;
+    showToast(`Level Up! You are now level ${current.data.level}!`,'success');
+    current.data.wallet += current.data.level * 100;
+  }
+  saveCurrent();
+}
+
+function checkAchievements(){
+  if(!current) return;
+  ACHIEVEMENTS.forEach(ach=>{
+    if(!current.data.achievements.includes(ach.id) && ach.check(current.data)){
+      current.data.achievements.push(ach.id);
+      current.data.wallet += ach.reward;
+      showToast(`Achievement Unlocked: ${ach.name}! +₱${ach.reward}`,'success');
+      saveCurrent();
+    }
+  });
+}
+
+function openInventory(){
+  if(!current) return;
+  const inv = current.data.inventory || [];
+  let html = `<h3>Inventory</h3><div class="muted">Use items from your inventory</div><div style="margin-top:12px">`;
+  if(inv.length===0) html += `<div class="muted">Empty</div>`;
+  else inv.forEach((it,idx)=>{
+    html += `<div class="row-between" style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)"><div>${escapeHtml(it.label)} x${it.qty}</div><div><button data-idx="${idx}" class="btn useItem">Use</button></div></div>`;
+  });
+  html += `<div style="text-align:right;margin-top:12px"><button id="closeInv" class="btn">Close</button></div></div>`;
+  openModal(html);
+  document.getElementById('closeInv').addEventListener('click', closeModal);
+  modalInner.querySelectorAll('.useItem').forEach(b=> b.addEventListener('click', ()=>{ const idx = Number(b.dataset.idx); useItem(idx); }));
+}
+
+function openShopModal(){
+  if(!current) return;
+  const categories = [...new Set(SHOP.map(i=>i.category))];
+  let html = `<h3>Shop</h3><div class="muted">Buy items to boost your performance</div>`;
+  
+  categories.forEach(cat=>{
+    html += `<div style="margin-top:16px"><div style="font-weight:600;text-transform:capitalize;margin-bottom:8px">${cat}</div>`;
+    SHOP.filter(i=>i.category===cat).forEach(it=>{
+      const canBuy = (current.data.wallet||0) >= it.price;
+      html += `<div class="row-between" style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)">
+        <div>${it.id}. ${escapeHtml(it.label)} - ₱${it.price}<br><span class="muted small">${it.effect?`+${(it.effect.mult*100||0).toFixed(0)}% income`:it.unlock?`Unlocks ${it.unlock}`:''}</span></div>
+        <div><button data-id="${it.id}" class="btn buyNow" ${!canBuy?'disabled':''}>Buy</button></div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  
+  html += `<div style="text-align:right;margin-top:12px"><button id="closeShop" class="btn">Close</button></div>`;
+  openModal(html);
+  document.getElementById('closeShop').addEventListener('click', closeModal);
+  modalInner.querySelectorAll('.buyNow').forEach(b=> b.addEventListener('click', ()=>{ buyItem(Number(b.dataset.id)); closeModal(); }));
+}
+
+function useItem(invIndex){
+  if(!current) return;
+  const inv = current.data.inventory || [];
+  const item = inv[invIndex];
+  if(!item) return showToast('Item not found','error');
+  
+  const shopItem = SHOP.find(s=>s.label===item.label);
+  if(!shopItem?.effect) return showToast('Cannot use this item','error');
+  
+  item.qty -= 1;
+  if(item.qty<=0) inv.splice(invIndex,1);
+  
+  const expires = Date.now() + (shopItem.effect.duration || EFFECT_DURATION);
+  current.data.effects = current.data.effects || [];
+  current.data.effects.push({ type:shopItem.effect.type, mult:shopItem.effect.mult||0, cooldownReduce:shopItem.effect.cooldownReduce||0, successBoost:shopItem.effect.successBoost||0, expires });
+  saveCurrent();
+  updateEffectsUI();
+  log(`Used ${item.label} — effects applied!`);
+  showToast(`Used ${item.label}!`,'success');
+  closeModal();
+}
+
+function getMultiplier(){
+  if(!current) return 1;
+  const base=1;
+  const total = (current.data.effects||[]).reduce((s,e)=> s + (e.mult||0), 0);
+  return base + total;
+}
+
+function getCooldownMultiplier(){
+  if(!current) return 1;
+  const reduce = (current.data.effects||[]).reduce((s,e)=> s + (e.cooldownReduce||0), 0);
+  return Math.max(0.1, 1 - reduce);
+}
+
+function getSuccessBoost(){
+  if(!current) return 0;
+  return (current.data.effects||[]).reduce((s,e)=> s + (e.successBoost||0), 0);
+}
+
+function canUse(action){
+  if(!current) return false;
+  const last = current.data.cooldowns && current.data.cooldowns[action] || 0;
+  const cooldown = (COOLDOWNS[action]||0) * getCooldownMultiplier();
+  return (Date.now() - last) >= cooldown;
+}
+
+function setCooldown(action){
+  if(!current) return;
+  current.data.cooldowns = current.data.cooldowns || {};
+  current.data.cooldowns[action] = Date.now();
+  saveCurrent();
+}
+
+function trackCommand(cmd){
+  if(!current) return;
+  current.data.stats.commandsUsed = current.data.stats.commandsUsed || {};
+  current.data.stats.commandsUsed[cmd] = (current.data.stats.commandsUsed[cmd]||0) + 1;
+}
+
+function doWork(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('work')){
+    const timeLeft = Math.ceil(((COOLDOWNS.work * getCooldownMultiplier()) - (Date.now() - (current.data.cooldowns.work||0)))/1000);
+    return log(`Work is on cooldown. Try again in ${timeLeft}s`);
+  }
+  trackCommand('work');
+  const base = Math.floor(Math.random()*400 + 100);
+  const jobBonus = current.data.job ? JOBS.find(j=>j.id===current.data.job)?.pay || 0 : 0;
+  const gain = Math.round((base + jobBonus) * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('work');
+  addXP(5);
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+  log(`You worked and earned ${fmt(gain)} (base ${fmt(base)} + job ${fmt(jobBonus)} × ${getMultiplier().toFixed(2)})`);
+  showToast(`+${fmt(gain)} earned!`,'success');
+}
+
+function doDaily(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('daily')){
+    const timeLeft = Math.ceil(((COOLDOWNS.daily * getCooldownMultiplier()) - (Date.now() - (current.data.cooldowns.daily||0)))/1000);
+    return log(`Daily already claimed. Next in ${formatTime(timeLeft)}`);
+  }
+  trackCommand('daily');
+  
+  const now = Date.now();
+  const lastDaily = current.data.lastDaily || 0;
+  const daysDiff = Math.floor((now - lastDaily) / (24*60*60*1000));
+  
+  if(daysDiff === 1) current.data.dailyStreak++;
+  else if(daysDiff > 1) current.data.dailyStreak = 1;
+  else current.data.dailyStreak = 1;
+  
+  current.data.lastDaily = now;
+  
+  const base = 500 + Math.floor(Math.random()*500);
+  const streakBonus = current.data.dailyStreak * 50;
+  const gain = Math.round((base + streakBonus) * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('daily');
+  addXP(20);
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+  log(`Daily claimed: ${fmt(gain)} (streak: ${current.data.dailyStreak} days, bonus: ${fmt(streakBonus)})`);
+  showToast(`Daily claimed! ${current.data.dailyStreak} day streak!`,'success');
+}
+
+function doBeg(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('beg')) return log('Beg is on cooldown');
+  trackCommand('beg');
+  const base = Math.random()>0.8 ? Math.floor(Math.random()*500+100) : Math.floor(Math.random()*50);
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('beg');
+  addXP(2);
+  saveCurrent();
+  updateEffectsUI();
+  log(`Someone gave you ${fmt(gain)}`);
+  showToast(`+${fmt(gain)} from begging`,'info');
+}
+
+function doRob(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('rob')) return log('Rob is on cooldown');
+  trackCommand('rob');
+  const successChance = 0.4 + getSuccessBoost();
+  const success = Math.random() < successChance;
+  if(success){
+    const base = Math.floor(Math.random()*500+100);
+    const gain = Math.round(base * getMultiplier());
+    current.data.wallet = (current.data.wallet||0) + gain;
+    current.data.stats.totalEarned += gain;
+    current.data.stats.successfulRobs = (current.data.stats.successfulRobs||0) + 1;
+    addXP(10);
+    log(`Rob success! You gained ${fmt(gain)}`);
+    showToast(`Rob successful! +${fmt(gain)}`,'success');
+  } else {
+    const fine = Math.floor(Math.random()*400 + 100);
+    current.data.wallet = Math.max(0, (current.data.wallet||0) - fine);
+    log(`Rob failed — paid fine ${fmt(fine)}`);
+    showToast(`Rob failed! -${fmt(fine)}`,'error');
+  }
+  setCooldown('rob');
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+}
+
+function doSearch(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('search')){
+    const timeLeft = Math.ceil(((COOLDOWNS.search * getCooldownMultiplier()) - (Date.now() - (current.data.cooldowns.search||0)))/1000);
+    return log(`Search is on cooldown. Try again in ${timeLeft}s`);
+  }
+  trackCommand('search');
+  const locations = ['under the couch', 'in your old jacket', 'behind the vending machine', 'in the parking lot', 'at the bus stop'];
+  const loc = locations[Math.floor(Math.random()*locations.length)];
+  const base = Math.floor(Math.random()*200 + 50);
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('search');
+  addXP(3);
+  saveCurrent();
+  updateEffectsUI();
+  log(`You searched ${loc} and found ${fmt(gain)}`);
+  showToast(`Found ${fmt(gain)}!`,'success');
+}
+
+function doCrime(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('crime')) return log('Crime is on cooldown');
+  trackCommand('crime');
+  const successChance = 0.3 + getSuccessBoost();
+  const success = Math.random() < successChance;
+  if(success){
+    const base = Math.floor(Math.random()*1000+500);
+    const gain = Math.round(base * getMultiplier());
+    current.data.wallet = (current.data.wallet||0) + gain;
+    current.data.stats.totalEarned += gain;
+    addXP(15);
+    log(`Crime success! You gained ${fmt(gain)}`);
+    showToast(`Crime successful! +${fmt(gain)}`,'success');
+  } else {
+    const fine = Math.floor(Math.random()*800 + 200);
+    current.data.wallet = Math.max(0, (current.data.wallet||0) - fine);
+    log(`Crime failed — paid fine ${fmt(fine)}`);
+    showToast(`Crime failed! -${fmt(fine)}`,'error');
+  }
+  setCooldown('crime');
+  saveCurrent();
+  updateEffectsUI();
+}
+
+function doFish(){
+  if(!current) return showToast('Sign in first','error');
+  const hasRod = current.data.inventory?.some(i=>i.label==='Fishing Rod');
+  if(!hasRod) return log('You need a Fishing Rod! Buy one from the shop.');
+  if(!canUse('fish')) return log('Fish is on cooldown');
+  trackCommand('fish');
+  const catches = ['Bass','Trout','Salmon','Tuna','Rare Pearl'];
+  const values = [50,100,200,350,1000];
+  const idx = Math.random()>0.9 ? 4 : Math.floor(Math.random()*4);
+  const base = values[idx];
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('fish');
+  addXP(8);
+  saveCurrent();
+  updateEffectsUI();
+  log(`You caught a ${catches[idx]}! Sold for ${fmt(gain)}`);
+  showToast(`Caught ${catches[idx]}! +${fmt(gain)}`,'success');
+}
+
+function doMine(){
+  if(!current) return showToast('Sign in first','error');
+  const hasPick = current.data.inventory?.some(i=>i.label==='Pickaxe');
+  if(!hasPick) return log('You need a Pickaxe! Buy one from the shop.');
+  if(!canUse('mine')) return log('Mine is on cooldown');
+  trackCommand('mine');
+  const ores = ['Coal','Iron','Gold','Diamond'];
+  const values = [80,150,400,1200];
+  const idx = Math.random()>0.85 ? 3 : Math.floor(Math.random()*3);
+  const base = values[idx];
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('mine');
+  addXP(10);
+  saveCurrent();
+  updateEffectsUI();
+  log(`You mined ${ores[idx]}! Sold for ${fmt(gain)}`);
+  showToast(`Mined ${ores[idx]}! +${fmt(gain)}`,'success');
+}
+
+function doHunt(){
+  if(!current) return showToast('Sign in first','error');
+  const hasRifle = current.data.inventory?.some(i=>i.label==='Hunting Rifle');
+  if(!hasRifle) return log('You need a Hunting Rifle! Buy one from the shop.');
+  if(!canUse('hunt')) return log('Hunt is on cooldown');
+  trackCommand('hunt');
+  const animals = ['Rabbit','Deer','Boar','Bear'];
+  const values = [100,300,600,1500];
+  const idx = Math.random()>0.8 ? 3 : Math.floor(Math.random()*3);
+  const base = values[idx];
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('hunt');
+  addXP(12);
+  saveCurrent();
+  updateEffectsUI();
+  log(`You hunted a ${animals[idx]}! Sold for ${fmt(gain)}`);
+  showToast(`Hunted ${animals[idx]}! +${fmt(gain)}`,'success');
+}
+
+function doStream(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('stream')) return log('Stream is on cooldown');
+  trackCommand('stream');
+  const viewers = Math.floor(Math.random()*1000 + 100);
+  const base = Math.floor(viewers * (Math.random() + 0.5));
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('stream');
+  addXP(20);
+  saveCurrent();
+  updateEffectsUI();
+  log(`You streamed for ${viewers} viewers and earned ${fmt(gain)}`);
+  showToast(`Stream complete! +${fmt(gain)}`,'success');
+}
+
+function doHourly(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('hourly')) return log('Hourly bonus already claimed');
+  trackCommand('hourly');
+  const base = 200;
+  const gain = Math.round(base * getMultiplier());
+  current.data.wallet = (current.data.wallet||0) + gain;
+  current.data.stats.totalEarned += gain;
+  setCooldown('hourly');
+  addXP(5);
+  saveCurrent();
+  updateEffectsUI();
+  log(`Hourly bonus claimed: ${fmt(gain)}`);
+  showToast(`Hourly bonus! +${fmt(gain)}`,'success');
+}
+
+function doSpin(){
+  if(!current) return showToast('Sign in first','error');
+  if(!canUse('spin')) return log('Wheel already spun today');
+  trackCommand('spin');
+  const prizes = [100,250,500,1000,2500,5000];
+  const prize = prizes[Math.floor(Math.random()*prizes.length)];
+  current.data.wallet = (current.data.wallet||0) + prize;
+  current.data.stats.totalEarned += prize;
+  setCooldown('spin');
+  addXP(15);
+  saveCurrent();
+  updateEffectsUI();
+  log(`You spun the wheel and won ${fmt(prize)}!`);
+  showToast(`Wheel spin! Won ${fmt(prize)}!`,'success');
+}
+
+function deposit(amount){
+  if(!current) return showToast('Sign in first','error');
+  if(amount==='all') amount = current.data.wallet||0;
+  amount = Number(amount);
+  if(!Number.isFinite(amount) || amount<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amount) return log('Not enough wallet balance');
+  current.data.wallet -= amount;
+  current.data.bank = (current.data.bank||0) + amount;
+  saveCurrent();
+  updateEffectsUI();
+  log(`Deposited ${fmt(amount)}`);
+  showToast(`Deposited ${fmt(amount)}`,'info');
+}
+
+function withdraw(amount){
+  if(!current) return showToast('Sign in first','error');
+  if(amount==='all') amount = current.data.bank||0;
+  amount = Number(amount);
+  if(!Number.isFinite(amount) || amount<=0) return log('Invalid amount');
+  if((current.data.bank||0) < amount) return log('Not enough bank balance');
+  current.data.bank -= amount;
+  current.data.wallet = (current.data.wallet||0) + amount;
+  saveCurrent();
+  updateEffectsUI();
+  log(`Withdrew ${fmt(amount)}`);
+  showToast(`Withdrew ${fmt(amount)}`,'info');
+}
+
+function transfer(to, amt){
+  if(!current) return showToast('Sign in first','error');
+  if(!to) return log('Specify username');
+  amt = Number(amt);
+  if(!Number.isFinite(amt) || amt<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amt) return log('Not enough wallet balance');
+  const r = accounts[to];
+  if(!r) return log('Recipient not found');
+  current.data.wallet -= amt;
+  r.data.wallet = (r.data.wallet||0) + amt;
+  saveAccounts();
+  saveCurrent();
+  updateEffectsUI();
+  log(`Transferred ${fmt(amt)} to ${to}`);
+  showToast(`Transferred ${fmt(amt)} to ${to}`,'success');
+}
+
+function buyItem(id){
+  if(!current) return showToast('Sign in first','error');
+  const item = SHOP.find(s=>s.id==id);
+  if(!item) return log('Item not found');
+  if((current.data.wallet||0) < item.price) return log('Not enough money');
+  current.data.wallet -= item.price;
+  current.data.stats.totalSpent += item.price;
+  current.data.inventory = current.data.inventory || [];
+  const ex = current.data.inventory.find(x=>x.label===item.label);
+  if(ex) ex.qty++;
+  else current.data.inventory.push({ id:item.id, label:item.label, qty:1 });
+  saveCurrent();
+  updateEffectsUI();
+  log(`Bought ${item.label} x1 for ${fmt(item.price)}`);
+  showToast(`Bought ${item.label}!`,'success');
+}
+
+function doGamble(amt){
+  if(!current) return showToast('Sign in first','error');
+  amt = Number(amt);
+  if(!Number.isFinite(amt) || amt<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amt) return log('Not enough wallet balance');
+  trackCommand('gamble');
+  current.data.stats.totalGambled += amt;
+  const win = Math.random() > 0.5;
+  if(win){
+    current.data.wallet += amt;
+    current.data.stats.totalEarned += amt;
+    addXP(5);
+    log(`🎰 Gamble won! You gained ${fmt(amt)}. Balance: ${fmt(current.data.wallet)}`);
+    showToast(`Won ${fmt(amt)}!`,'success');
+  } else {
+    current.data.wallet -= amt;
+    log(`🎰 Gamble lost! You lost ${fmt(amt)}. Balance: ${fmt(current.data.wallet)}`);
+    showToast(`Lost ${fmt(amt)}`,'error');
+  }
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+}
+
+function doCoinflip(choice, amt){
+  if(!current) return showToast('Sign in first','error');
+  amt = Number(amt);
+  if(!choice || !['h','t','heads','tails'].includes(choice.toLowerCase())) return log('Choose heads (h) or tails (t)');
+  if(!Number.isFinite(amt) || amt<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amt) return log('Not enough wallet balance');
+  trackCommand('coinflip');
+  current.data.stats.totalGambled += amt;
+  const result = Math.random() > 0.5 ? 'heads' : 'tails';
+  const choiceNorm = choice.toLowerCase().startsWith('h') ? 'heads' : 'tails';
+  const win = result === choiceNorm;
+  if(win){
+    current.data.wallet += amt;
+    current.data.stats.totalEarned += amt;
+    addXP(5);
+    log(`🪙 Coinflip: ${result}! You won ${fmt(amt)}`);
+    showToast(`Coinflip won! +${fmt(amt)}`,'success');
+  } else {
+    current.data.wallet -= amt;
+    log(`🪙 Coinflip: ${result}! You lost ${fmt(amt)}`);
+    showToast(`Coinflip lost! -${fmt(amt)}`,'error');
+  }
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+}
+
+function doSlots(amt){
+  if(!current) return showToast('Sign in first','error');
+  amt = Number(amt);
+  if(!Number.isFinite(amt) || amt<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amt) return log('Not enough wallet balance');
+  trackCommand('slots');
+  current.data.stats.totalGambled += amt;
+  const symbols = ['🍒','🍋','🍊','🔔','💎'];
+  const reels = [symbols[Math.floor(Math.random()*symbols.length)],symbols[Math.floor(Math.random()*symbols.length)],symbols[Math.floor(Math.random()*symbols.length)]];
+  const line = reels.join(' ');
+  
+  let mult = 0;
+  if(reels[0]===reels[1] && reels[1]===reels[2]){
+    if(reels[0]==='💎') mult=10;
+    else if(reels[0]==='🔔') mult=5;
+    else mult=3;
+  }else if(reels[0]===reels[1] || reels[1]===reels[2]) mult=1.5;
+  
+  const winAmt = Math.floor(amt * mult);
+  if(mult>0){
+    current.data.wallet += winAmt - amt;
+    current.data.stats.totalEarned += winAmt;
+    addXP(8);
+    log(`🎰 ${line} | Won ${fmt(winAmt)}!`);
+    showToast(`Slots won! +${fmt(winAmt)}`,'success');
+  }else{
+    current.data.wallet -= amt;
+    log(`🎰 ${line} | Lost ${fmt(amt)}`);
+    showToast(`Slots lost! -${fmt(amt)}`,'error');
+  }
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+}
+
+function doBlackjack(amt){
+  if(!current) return showToast('Sign in first','error');
+  amt = Number(amt);
+  if(!Number.isFinite(amt) || amt<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amt) return log('Not enough wallet balance');
+  trackCommand('blackjack');
+  current.data.stats.totalGambled += amt;
+  
+  const draw = ()=> Math.floor(Math.random()*11)+1;
+  const player = draw() + draw();
+  const dealer = draw() + draw();
+  
+  let result = '';
+  if(player === 21) result = 'Blackjack! You won!';
+  else if(dealer === 21) result = 'Dealer has Blackjack! You lost.';
+  else if(player > dealer) result = 'You won!';
+  else if(dealer > player) result = 'Dealer won!';
+  else result = 'Push! Tie.';
+  
+  const win = result.includes('You won') || result.includes('Blackjack');
+  if(win){
+    current.data.wallet += amt;
+    current.data.stats.totalEarned += amt;
+    addXP(7);
+    log(`🃏 Player: ${player} | Dealer: ${dealer} | ${result} +${fmt(amt)}`);
+    showToast(`Blackjack won! +${fmt(amt)}`,'success');
+  }else if(result.includes('Tie')){
+    log(`🃏 Player: ${player} | Dealer: ${dealer} | ${result}`);
+    showToast('Blackjack tied!','info');
+  }else{
+    current.data.wallet -= amt;
+    log(`🃏 Player: ${player} | Dealer: ${dealer} | ${result} -${fmt(amt)}`);
+    showToast(`Blackjack lost! -${fmt(amt)}`,'error');
+  }
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+}
+
+function doDice(amt){
+  if(!current) return showToast('Sign in first','error');
+  amt = Number(amt);
+  if(!Number.isFinite(amt) || amt<=0) return log('Invalid amount');
+  if((current.data.wallet||0) < amt) return log('Not enough wallet balance');
+  trackCommand('dice');
+  current.data.stats.totalGambled += amt;
+  
+  const player = Math.floor(Math.random()*6)+1;
+  const dealer = Math.floor(Math.random()*6)+1;
+  
+  if(player > dealer){
+    current.data.wallet += amt;
+    current.data.stats.totalEarned += amt;
+    addXP(5);
+    log(`🎲 You: ${player} | Dealer: ${dealer} | You won! +${fmt(amt)}`);
+    showToast(`Dice won! +${fmt(amt)}`,'success');
+  }else if(dealer > player){
+    current.data.wallet -= amt;
+    log(`🎲 You: ${player} | Dealer: ${dealer} | You lost! -${fmt(amt)}`);
+    showToast(`Dice lost! -${fmt(amt)}`,'error');
+  }else{
+    log(`🎲 You: ${player} | Dealer: ${dealer} | Tie!`);
+    showToast('Dice tied!','info');
+  }
+  saveCurrent();
+  updateEffectsUI();
+  checkAchievements();
+}
+
+function doRPS(choice){
+  if(!current) return showToast('Sign in first','error');
+  const choices = ['rock','paper','scissors'];
+  choice = choice?.toLowerCase();
+  if(!choices.includes(choice)) return log('Choose: rock, paper, or scissors');
+  trackCommand('rps');
+  
+  const bot = choices[Math.floor(Math.random()*3)];
+  const amt = 100;
+  
+  if(choice === bot){
+    log(`✊✋✌️ You: ${choice} | Bot: ${bot} | Tie!`);
+    showToast('RPS tied!','info');
+  }else if((choice==='rock'&&bot==='scissors')||(choice==='paper'&&bot==='rock')||(choice==='scissors'&&bot==='paper')){
+    current.data.wallet = (current.data.wallet||0) + amt;
+    current.data.stats.totalEarned += amt;
+    addXP(3);
+    log(`✊✋✌️ You: ${choice} | Bot: ${bot} | You won! +${fmt(amt)}`);
+    showToast(`RPS won! +${fmt(amt)}`,'success');
+  }else{
+    current.data.wallet = Math.max(0, (current.data.wallet||0) - amt);
+    log(`✊✋✌️ You: ${choice} | Bot: ${bot} | You lost! -${fmt(amt)}`);
+    showToast(`RPS lost! -${fmt(amt)}`,'error');
+  }
+  saveCurrent();
+  updateEffectsUI();
+}
+
+function doTrivia(){
+  if(!current) return showToast('Sign in first','error');
+  trackCommand('trivia');
+  const questions = [
+    {q:'What is 2+2?',a:['4','four']},
+    {q:'Capital of France?',a:['paris']},
+    {q:'What color is the sky?',a:['blue']},
+    {q:'How many days in a week?',a:['7','seven']},
+    {q:'What is the largest ocean?',a:['pacific']}
+  ];
+  const qst = questions[Math.floor(Math.random()*questions.length)];
+  const answer = prompt(qst.q);
+  if(!answer) return;
+  
+  if(qst.a.some(a=>answer.toLowerCase().trim()===a)){
+    const prize = 200;
+    current.data.wallet = (current.data.wallet||0) + prize;
+    current.data.stats.totalEarned += prize;
+    addXP(10);
+    saveCurrent();
+    updateEffectsUI();
+    log(`✅ Correct! You won ${fmt(prize)}`);
+    showToast(`Trivia correct! +${fmt(prize)}`,'success');
+  }else{
+    log(`❌ Wrong! The answer was: ${qst.a[0]}`);
+    showToast('Trivia incorrect!','error');
+  }
+}
+
+function doShare(user, percent){
+  if(!current) return showToast('Sign in first','error');
+  percent = Number(percent);
+  if(!user) return log('Specify username');
+  if(!Number.isFinite(percent) || percent<=0 || percent>100) return log('Invalid percentage (1-100)');
+  const totalBal = (current.data.wallet||0) + (current.data.bank||0);
+  const shareAmt = Math.floor(totalBal * (percent/100));
+  if(shareAmt <= 0) return log('Not enough balance to share');
+  const recipient = accounts[user];
+  if(!recipient) return log('User not found');
+  
+  let remaining = shareAmt;
+  if(current.data.wallet >= remaining){
+    current.data.wallet -= remaining;
+  } else {
+    remaining -= current.data.wallet;
+    current.data.wallet = 0;
+    current.data.bank = Math.max(0, (current.data.bank||0) - remaining);
+  }
+  recipient.data.wallet = (recipient.data.wallet||0) + shareAmt;
+  saveAccounts();
+  saveCurrent();
+  updateEffectsUI();
+  log(`Shared ${percent}% (${fmt(shareAmt)}) with ${user}`);
+  showToast(`Shared ${fmt(shareAmt)} with ${user}`,'success');
+}
+
+function doGift(user, itemName){
+  if(!current) return showToast('Sign in first','error');
+  if(!user || !itemName) return log('Usage: gift [username] [item]');
+  const recipient = accounts[user];
+  if(!recipient) return log('User not found');
+  
+  const item = current.data.inventory?.find(i=>i.label.toLowerCase()===itemName.toLowerCase());
+  if(!item) return log('You don\'t have that item');
+  
+  item.qty--;
+  if(item.qty<=0) current.data.inventory = current.data.inventory.filter(i=>i.label!==item.label);
+  
+  recipient.data.inventory = recipient.data.inventory || [];
+  const recItem = recipient.data.inventory.find(i=>i.label===item.label);
+  if(recItem) recItem.qty++;
+  else recipient.data.inventory.push({id:item.id,label:item.label,qty:1});
+  
+  saveAccounts();
+  saveCurrent();
+  updateEffectsUI();
+  log(`Gifted ${item.label} to ${user}`);
+  showToast(`Gifted ${item.label} to ${user}`,'success');
+}
+
+function applyForJob(jobId){
+  if(!current) return showToast('Sign in first','error');
+  const job = JOBS.find(j=>j.id===jobId);
+  if(!job) return log('Job not found. Available: ' + JOBS.map(j=>j.id).join(', '));
+  const netWorth = (current.data.wallet||0) + (current.data.bank||0);
+  if(netWorth < job.requirement) return log(`Need ₱${job.requirement.toLocaleString()} net worth for this job`);
+  
+  current.data.job = job.id;
+  saveCurrent();
+  log(`You are now employed as a ${job.name}! Bonus: ₱${job.pay} per work command`);
+  showToast(`Now working as ${job.name}!`,'success');
+}
+
+function showBalance(){
+  if(!current) return showToast('Sign in first','error');
+  log(`💰 Wallet: ${fmt(current.data.wallet||0)} | Bank: ${fmt(current.data.bank||0)} | Net: ${fmt((current.data.wallet||0)+(current.data.bank||0))}`);
+}
+
+function showLeaderboard(){
+  const list = Object.keys(accounts).map(k=>({u:k,total:(accounts[k].data.wallet||0)+(accounts[k].data.bank||0),lvl:accounts[k].data.level||1})).sort((a,b)=>b.total-a.total).slice(0,10);
+  let html=`<h3>Leaderboard</h3><div class="muted">Top 10 richest players</div><div style="margin-top:10px">`;
+  if(list.length===0) html+=`<div class="muted">No accounts yet</div>`;
+  else list.forEach((p,i)=> html+=`<div class="row-between" style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)"><div>${i+1}. ${escapeHtml(p.u)} <span class="badge">Lvl ${p.lvl}</span></div><span class="muted">${fmt(p.total)}</span></div>`);
+  html+=`<div style="text-align:right;margin-top:12px"><button id="closeLB" class="btn">Close</button></div></div>`;
+  openModal(html);
+  document.getElementById('closeLB').addEventListener('click', closeModal);
+}
+
+function showHelp(){
+  let html=`<h3>All Commands</h3><div class="muted">Complete command reference</div><div style="margin-top:12px;max-height:400px;overflow:auto">`;
+  const commands = [
+    {cmd:'work',desc:'Earn money from your job'},
+    {cmd:'daily',desc:'Daily reward with streak bonus'},
+    {cmd:'hourly',desc:'Claim hourly bonus'},
+    {cmd:'beg',desc:'Beg for money'},
+    {cmd:'rob',desc:'Attempt to rob (40% success)'},
+    {cmd:'crime',desc:'High-risk criminal activity'},
+    {cmd:'search',desc:'Search random locations'},
+    {cmd:'fish',desc:'Go fishing (requires Fishing Rod)'},
+    {cmd:'mine',desc:'Mine for ores (requires Pickaxe)'},
+    {cmd:'hunt',desc:'Hunt animals (requires Hunting Rifle)'},
+    {cmd:'stream',desc:'Stream for viewers'},
+    {cmd:'spin',desc:'Spin the wheel of fortune'},
+    {cmd:'deposit [amt|all]',desc:'Deposit to bank'},
+    {cmd:'withdraw [amt|all]',desc:'Withdraw from bank'},
+    {cmd:'transfer [user] [amt]',desc:'Send money'},
+    {cmd:'share [user] [%]',desc:'Share percentage of balance'},
+    {cmd:'gift [user] [item]',desc:'Gift an item'},
+    {cmd:'shop',desc:'Open shop'},
+    {cmd:'inventory',desc:'View items'},
+    {cmd:'buy [id]',desc:'Quick buy'},
+    {cmd:'balance',desc:'Check balance'},
+    {cmd:'job',desc:'View available jobs'},
+    {cmd:'apply [jobId]',desc:'Apply for a job'},
+    {cmd:'gamble [amt]',desc:'50/50 gamble'},
+    {cmd:'slots [amt]',desc:'Slot machine'},
+    {cmd:'blackjack [amt]',desc:'Blackjack game'},
+    {cmd:'dice [amt]',desc:'Dice roll'},
+    {cmd:'coinflip [h/t] [amt]',desc:'Coin flip'},
+    {cmd:'rps [choice]',desc:'Rock paper scissors'},
+    {cmd:'trivia',desc:'Answer trivia question'},
+    {cmd:'leaderboard',desc:'Top players'},
+    {cmd:'achievements',desc:'View achievements'},
+    {cmd:'help',desc:'Show this help'}
+  ];
+  commands.forEach(c=>html+=`<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)">
+    <div style="font-weight:600;color:var(--accent1)">${c.cmd}</div>
+    <div class="muted small">${c.desc}</div>
+  </div>`);
+  html+=`<div style="text-align:right;margin-top:12px"><button id="closeHelp" class="btn">Close</button></div></div>`;
+  openModal(html);
+  document.getElementById('closeHelp').addEventListener('click', closeModal);
+}
+
+function showJobs(){
+  if(!current) return showToast('Sign in first','error');
+  let html = `<h3>Available Jobs</h3><div class="muted">Apply for jobs to increase your income</div><div style="margin-top:12px">`;
+  JOBS.forEach(job=>{
+    const hasRequirement = ((current.data.wallet||0)+(current.data.bank||0)) >= job.requirement;
+    const isCurrent = current.data.job === job.id;
+    html += `<div style="padding:12px;background:${isCurrent?'rgba(62,231,176,0.1)':'var(--glass)'};border-radius:8px;margin-bottom:8px;border:1px solid ${isCurrent?'var(--accent1)':'rgba(255,255,255,0.05)'}">
+      <div style="font-weight:600">${job.name} ${isCurrent?'(Current)':''}</div>
+      <div class="muted small">Bonus: ₱${job.pay} per work | Requirement: ₱${job.requirement.toLocaleString()}</div>
+      ${!isCurrent?`<button class="btn ${hasRequirement?'primary':''}" onclick="applyForJob('${job.id}')" ${!hasRequirement?'disabled':''} style="margin-top:8px">Apply</button>`:''}
+    </div>`;
+  });
+  html += `<div style="text-align:right;margin-top:12px"><button id="closeJobs" class="btn">Close</button></div></div>`;
+  openModal(html);
+  document.getElementById('closeJobs').addEventListener('click', closeModal);
+}
+
+function runCmd(str){
+  if(!str) return;
+  const parts = str.trim().split(/\s+/);
+  const cmd=parts[0].toLowerCase();
+  
+  if(cmd==='work') doWork();
+  else if(cmd==='daily') doDaily();
+  else if(cmd==='hourly') doHourly();
+  else if(cmd==='beg') doBeg();
+  else if(cmd==='rob') doRob();
+  else if(cmd==='crime') doCrime();
+  else if(cmd==='fish') doFish();
+  else if(cmd==='mine') doMine();
+  else if(cmd==='hunt') doHunt();
+  else if(cmd==='stream') doStream();
+  else if(cmd==='search') doSearch();
+  else if(cmd==='spin') doSpin();
+  else if(cmd==='deposit' || cmd==='dep') deposit(parts[1]||0);
+  else if(cmd==='withdraw' || cmd==='with') withdraw(parts[1]||0);
+  else if(cmd==='transfer') transfer(parts[1], parts[2]||0);
+  else if(cmd==='share') doShare(parts[1], parts[2]||0);
+  else if(cmd==='gift') doGift(parts[1], parts.slice(2).join(' '));
+  else if(cmd==='inventory' || cmd==='inv') openInventory();
+  else if(cmd==='shop') openShopModal();
+  else if(cmd==='buy') buyItem(Number(parts[1]));
+  else if(cmd==='job' || cmd==='jobs') showJobs();
+  else if(cmd==='apply') applyForJob(parts[1]);
+  else if(cmd==='leaderboard' || cmd==='lb') showLeaderboard();
+  else if(cmd==='balance' || cmd==='bal') showBalance();
+  else if(cmd==='gamble' || cmd==='bet') doGamble(parts[1]||0);
+  else if(cmd==='slots') doSlots(parts[1]||0);
+  else if(cmd==='blackjack' || cmd==='bj') doBlackjack(parts[1]||0);
+  else if(cmd==='dice') doDice(parts[1]||0);
+  else if(cmd==='coinflip' || cmd==='cf') doCoinflip(parts[1], parts[2]||0);
+  else if(cmd==='rps') doRPS(parts[1]);
+  else if(cmd==='trivia') doTrivia();
+  else if(cmd==='achievements' || cmd==='ach') renderView('achievements');
+  else if(cmd==='help' || cmd==='commands') showHelp();
+  else log('Unknown command: '+cmd+' (type "help" for all commands)');
+}
+
+function fmt(n){ return '₱' + Number(n).toLocaleString(); }
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function formatTime(seconds){
+  const h = Math.floor(seconds/3600);
+  const m = Math.floor((seconds%3600)/60);
+  const s = seconds%60;
+  if(h>0) return `${h}h ${m}m`;
+  if(m>0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+renderAuth();
+</script>
+</body>
+</html>
